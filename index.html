@@ -309,15 +309,18 @@ function renderChart(records,goals){
   const hasGoal=goalDate&&!labels.includes(goalDate);
   if(hasGoal)allLabels.push(goalDate);
 
+  // 智能X轴标签抽稀（超过30个点则抽稀）
+  const displayLabels=allLabels.length>30?allLabels.map((l,i)=>i%(Math.ceil(allLabels.length/30))===0?l:''):allLabels;
+
   if(isAll){
     for(const k of['chinese','math','english']){
       const data=records.map(r=>r[k]);
-      if(data.some(v=>v!==null))ds.push({label:k==='chinese'?'语文':k==='math'?'数学':'英语',data,borderColor:cl[k],backgroundColor:cl[k]+'20',tension:.3,spanGaps:true,pointRadius:3});
+      if(data.some(v=>v!==null))ds.push({label:k==='chinese'?'语文':k==='math'?'数学':'英语',data,borderColor:cl[k],backgroundColor:cl[k]+'20',tension:.3,spanGaps:true,pointRadius:2});
     }
   }else if(isW){
     for(const k of['chinese','math','english']){
       const f='wrong_'+k;const data=records.map(r=>r[f]);
-      if(data.some(v=>v!==null))ds.push({label:k==='chinese'?'语文错题':k==='math'?'数学错题':'英语错题',data,borderColor:cl[k],backgroundColor:cl[k]+'20',tension:.3,spanGaps:true,pointRadius:3});
+      if(data.some(v=>v!==null))ds.push({label:k==='chinese'?'语文错题':k==='math'?'数学错题':'英语错题',data,borderColor:cl[k],backgroundColor:cl[k]+'20',tension:.3,spanGaps:true,pointRadius:2});
     }
   }else{
     // 单科：真实数据 + 预测线
@@ -325,7 +328,7 @@ function renderChart(records,goals){
     ds.push({
       label:curTab==='chinese'?'语文':curTab==='math'?'数学':'英语',
       data:realData,borderColor:cl[curTab],backgroundColor:cl[curTab]+'20',
-      tension:.3,spanGaps:true,pointRadius:4,fill:true,order:2
+      tension:.3,spanGaps:true,pointRadius:allLabels.length>50?0:3,fill:true,order:2
     });
 
     // 预测线
@@ -340,7 +343,6 @@ function renderChart(records,goals){
       // 扩展到目标日期
       const lastIdx=labels.length-1;
       const goalDayNum=(new Date(goalDate)-firstDate)/(1000*60*60*24);
-      const lastDayNum=labels.length?((new Date(labels[lastIdx])-firstDate)/(1000*60*60*24)):0;
 
       // 预测段数据
       const predData=new Array(allLabels.length).fill(null);
@@ -369,12 +371,26 @@ function renderChart(records,goals){
 
   chart=new Chart(ctx,{
     type:'line',
-    data:{labels:hasGoal?allLabels:labels,datasets:ds},
+    data:{labels:displayLabels,datasets:ds},
     options:{
       responsive:true,maintainAspectRatio:false,
       interaction:{intersect:false,mode:'index'},
-      plugins:{legend:{position:'bottom',labels:{usePointStyle:true,padding:18,padding:15}}},
+      plugins:{legend:{position:'bottom',labels:{usePointStyle:true,padding:15}}},
       scales:{
+        x:{
+          ticks:{
+            maxTicksLimit:30,
+            callback:function(value,index){
+              const label=this.getLabelForValue(index);
+              if(!label)return'';
+              // 显示格式：超过一年则显示年月，否则显示月日
+              const d=new Date(label);
+              const now=new Date();
+              const isSameYear=d.getFullYear()===now.getFullYear();
+              return isSameYear?`${d.getMonth()+1}/${d.getDate()}`:`${d.getFullYear()}-${d.getMonth()+1}`;
+            }
+          }
+        },
         y:{
           beginAtZero:isW,
           max:isW?undefined:100,
@@ -419,12 +435,47 @@ function renderStats(records){
 function renderTable(records){
   const c=document.getElementById('recordTable');
   if(!records.length){c.innerHTML='<div style="text-align:center;padding:30px;color:#94a3b8">暂无记录</div>';return;}
-  let h='<table><thead><tr><th>日期</th><th>语文</th><th>数学</th><th>英语</th><th>语文错题</th><th>数学错题</th><th>英语错题</th><th>综合</th><th>操作</th></tr></thead><tbody>';
-  [...records].reverse().forEach(r=>{
-    const comp=calcComposite(r);
-    h+=`<tr><td>${r.date}</td><td>${r.chinese??'-'}</td><td>${r.math??'-'}</td><td>${r.english??'-'}</td><td>${r.wrong_chinese??'-'}</td><td>${r.wrong_math??'-'}</td><td>${r.wrong_english??'-'}</td><td style="font-weight:600;color:#3b82f6">${comp??'-'}</td><td><button class="del-btn" onclick="deleteRecord('${r.id}')">删除</button></td></tr>`;
-  });
-  h+='</tbody></table>';c.innerHTML=h;
+  
+  // 分页逻辑
+  const pageSize=20;
+  const totalPages=Math.ceil(records.length/pageSize);
+  let currentPage=1;
+  
+  function renderPage(page){
+    const start=(page-1)*pageSize;
+    const end=Math.min(start+pageSize,records.length);
+    const pageRecords=[...records].reverse().slice(start,end);
+    
+    let h='<table><thead><tr><th>日期</th><th>语文</th><th>数学</th><th>英语</th><th>语文错题</th><th>数学错题</th><th>英语错题</th><th>综合</th><th>操作</th></tr></thead><tbody>';
+    pageRecords.forEach(r=>{
+      const comp=calcComposite(r);
+      h+=`<tr><td>${r.date}</td><td>${r.chinese??'-'}</td><td>${r.math??'-'}</td><td>${r.english??'-'}</td><td>${r.wrong_chinese??'-'}</td><td>${r.wrong_math??'-'}</td><td>${r.wrong_english??'-'}</td><td style="font-weight:600;color:#3b82f6">${comp??'-'}</td><td><button class="del-btn" onclick="deleteRecord('${r.id}')">删除</button></td></tr>`;
+    });
+    h+='</tbody></table>';
+    
+    // 分页控件
+    if(totalPages>1){
+      h+=`<div style="display:flex;justify-content:center;align-items:center;gap:8px;margin-top:16px;padding:12px;border-top:1px solid #e2e8f0">
+        <button class="btn-xs" style="background:#f1f5f9;border:1px solid #cbd5e1" onclick="changePage(${page-1})" ${page===1?'disabled':''}>上一页</button>
+        <span style="font-size:12px;color:#64748b">第 ${page}/${totalPages} 页 (共 ${records.length} 条)</span>
+        <button class="btn-xs" style="background:#f1f5f9;border:1px solid #cbd5e1" onclick="changePage(${page+1})" ${page===totalPages?'disabled':''}>下一页</button>
+        <select style="padding:4px 8px;border:1px solid #cbd5e1;border-radius:6px;font-size:12px;background:#fff" onchange="changePage(parseInt(this.value))">
+          ${Array.from({length:totalPages},(_,i)=>`<option value="${i+1}" ${page===i+1?'selected':''}>${i+1}</option>`).join('')}
+        </select>
+      </div>`;
+    }
+    
+    c.innerHTML=h;
+  }
+  
+  // 全局分页函数
+  window.changePage=function(newPage){
+    if(newPage<1||newPage>totalPages)return;
+    currentPage=newPage;
+    renderPage(currentPage);
+  };
+  
+  renderPage(currentPage);
 }
 
 // ============ 初始化 & 登录 ============
