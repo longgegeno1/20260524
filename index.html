@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>家庭学习追踪</title>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif; background: #f0f4f8; color: #1e293b; line-height: 1.5; min-height: 100vh;}
+.container {max-width: 1000px; margin: 0 auto; padding: 20px 16px;}
+
+.header {text-align: center; margin-bottom: 28px; padding: 28px 20px 20px;}
+.header h1 {font-size: 24px; color: #0f172a; margin-bottom: 6px;}
+.header p {color: #64748b; font-size: 14px;}
+.header .dot {display: inline-block; width: 7px; height: 7px; background: #10b981; border-radius: 50%; margin: 0 6px; animation: pulse 2s infinite;}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+.auth-card {max-width: 380px; margin: 30px auto; background: #fff; border-radius: 14px; padding: 28px 24px; box-shadow: 0 2px 12px rgba(0,0,0,0.06);}
+.auth-card h2 {font-size: 20px; text-align: center; margin-bottom: 4px;}
+.auth-card .sub {text-align: center; color: #94a3b8; font-size: 13px; margin-bottom: 20px;}
+.auth-tabs {display: flex; border-bottom: 1px solid #e2e8f0; margin-bottom: 20px;}
+.auth-tab {flex: 1; padding: 10px; border: none; background: none; font-size: 15px; font-weight: 600; color: #94a3b8; cursor: pointer; transition: all .2s;}
+.auth-tab.active {color: #3b82f6; border-bottom: 2px solid #3b82f6;}
+.field {margin-bottom: 16px;}
+.field label {display: block; font-size: 13px; color: #475569; margin-bottom: 5px; font-weight: 600;}
+.field input {width: 100%; padding: 10px 14px; border: 1.5px solid #cbd5e1; border-radius: 10px; font-size: 15px; transition: all .2s;}
+.field input:focus {outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1);}
+.btn {width: 100%; padding: 12px; border: none; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; transition: all .2s;}
+.btn-primary {background: #3b82f6; color: #fff;}
+.btn-primary:hover {background: #2563eb;}
+.btn-outline {background: #fff; color: #475569; border: 1.5px solid #cbd5e1;}
+.btn-outline:hover {background: #f8fafc;}
+.btn-sm {width: auto; padding: 7px 16px; font-size: 13px;}
+.error-msg {color: #ef4444; font-size: 13px; text-align: center; margin-top: 8px;}
+
+.main-app {display: none;}
+.user-bar {display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 14px 18px; background: #fff; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);}
+.user-info {display: flex; align-items: center; gap: 10px;}
+.avatar {width: 38px; height: 38px; background: linear-gradient(135deg, #8b5cf6, #3b82f6); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 15px;}
+.user-details h3 {font-size: 15px; margin-bottom: 1px;}
+.user-details span {font-size: 12px; color: #64748b;}
+.logout-btn {padding: 7px 14px; background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13px; cursor: pointer;}
+.logout-btn:hover {background: #e2e8f0;}
+
+.card {background: #fff; border-radius: 14px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-bottom: 20px;}
+.card h2 {font-size: 17px; color: #0f172a; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 2px solid #f1f5f9;}
+
+.form-grid {display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; align-items: end;}
+.form-group {display: flex; flex-direction: column;}
+.form-group label {font-size: 12px; color: #64748b; margin-bottom: 4px; font-weight: 600;}
+.form-group input {padding: 8px 10px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 14px; transition: all .2s;}
+.form-group input:focus {outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1);}
+.form-group input[type="date"] {color: #1e293b;}
+
+.stats-grid {display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; margin-bottom: 20px;}
+.stat-card {background: #fff; border-radius: 12px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); text-align: center;}
+.stat-card .label {font-size: 12px; color: #64748b; margin-bottom: 6px;}
+.stat-card .value {font-size: 28px; font-weight: 700;}
+.stat-card .sub {font-size: 11px; color: #94a3b8; margin-top: 2px;}
+
+.chart-wrap {position: relative; height: 300px;}
+.tabs {display: flex; gap: 4px; margin-bottom: 14px; flex-wrap: wrap;}
+.tab {padding: 7px 14px; border-radius: 8px 8px 0 0; background: #f1f5f9; border: none; cursor: pointer; font-size: 12px; font-weight: 600; color: #475569; transition: all .2s;}
+.tab.active {background: #3b82f6; color: #fff;}
+.tab:hover:not(.active) {background: #e2e8f0;}
+
+.table-wrap {overflow-x: auto; border-radius: 10px; border: 1px solid #e2e8f0;}
+table {width: 100%; border-collapse: collapse; font-size: 12px;}
+th {background: #f8fafc; color: #475569; font-weight: 600; padding: 10px 12px; text-align: left; border-bottom: 2px solid #e2e8f0; white-space: nowrap;}
+td {padding: 8px 12px; border-bottom: 1px solid #f1f5f9;}
+tr:hover {background: #f8fafc;}
+.del-btn {padding: 3px 8px; background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; border-radius: 5px; font-size: 11px; cursor: pointer;}
+.del-btn:hover {background: #fee2e2;}
+
+.loading {text-align: center; padding: 30px; color: #94a3b8;}
+
+@media (max-width: 640px) {
+  .form-grid {grid-template-columns: 1fr 1fr;}
+  .header h1 {font-size: 20px;}
+  .stats-grid {grid-template-columns: 1fr 1fr;}
+  .stat-card .value {font-size: 22px;}
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>家庭学习追踪</h1>
+    <p>全家共用，数据云端实时同步</p>
+    <p style="font-size:12px;color:#94a3b8;margin-top:4px;"><span class="dot"></span>支持电脑 / iPad / 手机同时访问</p>
+  </div>
+
+  <div id="authContainer" class="auth-card">
+    <h2 id="authTitle">登录</h2>
+    <p class="sub" id="authSub">已有账号请登录</p>
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tabLogin" onclick="switchTab('login')">登录</button>
+      <button class="auth-tab" id="tabRegister" onclick="switchTab('register')">注册</button>
+    </div>
+    <div id="formLogin">
+      <div class="field"><label>邮箱</label><input type="email" id="loginEmail" placeholder="your@email.com" autocomplete="email"></div>
+      <div class="field"><label>密码</label><input type="password" id="loginPassword" placeholder="至少6位" autocomplete="current-password"></div>
+      <p class="error-msg" id="loginError"></p>
+      <button class="btn btn-primary" onclick="doLogin()">登录</button>
+    </div>
+    <div id="formRegister" style="display:none">
+      <div class="field"><label>家庭名称</label><input type="text" id="regFamily" placeholder="例如：张家" autocomplete="off"></div>
+      <div class="field"><label>孩子姓名</label><input type="text" id="regChild" placeholder="例如：小明" autocomplete="off"></div>
+      <div class="field"><label>邮箱</label><input type="email" id="regEmail" placeholder="your@email.com" autocomplete="email"></div>
+      <div class="field"><label>密码</label><input type="password" id="regPassword" placeholder="至少6位" autocomplete="new-password"></div>
+      <p class="error-msg" id="regError"></p>
+      <button class="btn btn-primary" onclick="doRegister()">注册家庭账号</button>
+    </div>
+  </div>
+
+  <div id="mainApp" class="main-app">
+    <div class="user-bar">
+      <div class="user-info">
+        <div class="avatar" id="userAvatar">家</div>
+        <div class="user-details"><h3 id="familyName"></h3><span id="childName"></span></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <span style="font-size:12px;color:#94a3b8" id="recordCount">0条</span>
+        <button class="logout-btn" onclick="doLogout()">退出</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>录入学习数据</h2>
+      <div class="form-grid">
+        <div class="form-group"><label>日期</label><input type="date" id="recDate"></div>
+        <div class="form-group"><label>语文分数</label><input type="number" id="recChinese" placeholder="0-150" min="0" max="150" step="0.5"></div>
+        <div class="form-group"><label>数学分数</label><input type="number" id="recMath" placeholder="0-150" min="0" max="150" step="0.5"></div>
+        <div class="form-group"><label>英语分数</label><input type="number" id="recEnglish" placeholder="0-150" min="0" max="150" step="0.5"></div>
+        <div class="form-group"><label>语文错题</label><input type="number" id="recWC" placeholder="错题数" min="0" max="50"></div>
+        <div class="form-group"><label>数学错题</label><input type="number" id="recWM" placeholder="错题数" min="0" max="50"></div>
+        <div class="form-group"><label>英语错题</label><input type="number" id="recWE" placeholder="错题数" min="0" max="50"></div>
+        <div class="form-group"><label>&nbsp;</label><button class="btn btn-primary btn-sm" onclick="addRecord()">添加</button></div>
+      </div>
+    </div>
+
+    <div class="stats-grid" id="stats"></div>
+
+    <div class="card">
+      <h2>趋势图表</h2>
+      <div class="tabs">
+        <button class="tab active" onclick="swTab('all',this)">全科对比</button>
+        <button class="tab" onclick="swTab('chinese',this)">语文</button>
+        <button class="tab" onclick="swTab('math',this)">数学</button>
+        <button class="tab" onclick="swTab('english',this)">英语</button>
+        <button class="tab" onclick="swTab('wrong',this)">错题对比</button>
+        <button class="tab" onclick="swTab('composite',this)">综合评分</button>
+      </div>
+      <div class="chart-wrap"><canvas id="mainChart"></canvas></div>
+    </div>
+
+    <div class="card">
+      <h2>历史记录</h2>
+      <div class="table-wrap" id="recordTable"><div class="loading">加载中...</div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============ 配置区 ============
+const SUPABASE_URL = 'https://rzwoomeuagpdqwhfpsxa.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ6d29vbWV1YWdwZHF3aGZwc3hhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2MTE4MTgsImV4cCI6MjA5NTE4NzgxOH0.ohJWzfDYCIUOLa9X2bKvnGes9Rm3f0QbDm_Tu1O8SOo';
+// ===============================
+
+let sb = null, chart = null, curTab = 'all', user = null, profile = null;
+
+async function init() {
+  if (SUPABASE_URL === 'YOUR_SUPABASE_URL') {
+    document.getElementById('authContainer').innerHTML = 
+      '<div style="text-align:center;padding:40px;color:#64748b"><p style="font-size:16px;margin-bottom:12px">请先配置 Supabase</p><p style="font-size:13px">将 index.html 中的 YOUR_SUPABASE_URL 和 YOUR_ANON_KEY 替换为你的 Supabase 项目信息</p></div>';
+    return;
+  }
+  sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) { user = session.user; await loadProfile(); showApp(); }
+}
+
+function switchTab(t) {
+  document.getElementById('tabLogin').classList.toggle('active', t==='login');
+  document.getElementById('tabRegister').classList.toggle('active', t==='register');
+  document.getElementById('formLogin').style.display = t==='login'?'block':'none';
+  document.getElementById('formRegister').style.display = t==='register'?'block':'none';
+  document.getElementById('authTitle').textContent = t==='login'?'登录':'注册';
+  document.getElementById('authSub').textContent = t==='login'?'已有账号请登录':'创建家庭账号';
+  document.getElementById('loginError').textContent = '';
+  document.getElementById('regError').textContent = '';
+}
+
+async function doRegister() {
+  const family = document.getElementById('regFamily').value.trim();
+  const child = document.getElementById('regChild').value.trim();
+  const email = document.getElementById('regEmail').value.trim();
+  const password = document.getElementById('regPassword').value;
+  document.getElementById('regError').textContent = '';
+  if (!family||!child||!email||!password) { document.getElementById('regError').textContent='请填写所有字段'; return; }
+  if (password.length<6) { document.getElementById('regError').textContent='密码至少6位'; return; }
+  try {
+    const { data, error } = await sb.auth.signUp({ email, password, options: { data: { family_name: family, child_name: child } } });
+    if (error) throw error;
+    if (data.user?.identities?.length === 0) {
+      document.getElementById('regError').textContent = '该邮箱已注册，请直接登录';
+      return;
+    }
+    alert('注册成功！请检查邮箱完成验证后登录。\n（如未收到邮件，可在 Supabase Dashboard > Authentication 中关闭邮件验证）');
+    switchTab('login');
+  } catch(e) { document.getElementById('regError').textContent = e.message; }
+}
+
+async function doLogin() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  document.getElementById('loginError').textContent = '';
+  if (!email||!password) { document.getElementById('loginError').textContent='请填写邮箱和密码'; return; }
+  try {
+    const { data, error } = await sb.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    user = data.user;
+    await loadProfile();
+    showApp();
+  } catch(e) { document.getElementById('loginError').textContent = e.message; }
+}
+
+async function loadProfile() {
+  if (!user) return;
+  const meta = user.user_metadata || {};
+  profile = { family_name: meta.family_name || '我的家庭', child_name: meta.child_name || '孩子' };
+  document.getElementById('familyName').textContent = profile.family_name;
+  document.getElementById('childName').textContent = profile.child_name;
+  document.getElementById('userAvatar').textContent = profile.family_name.charAt(0);
+}
+
+function showApp() {
+  document.getElementById('authContainer').style.display = 'none';
+  document.getElementById('mainApp').style.display = 'block';
+  document.getElementById('recDate').value = new Date().toISOString().slice(0,10);
+  loadRecords();
+}
+
+async function doLogout() {
+  await sb.auth.signOut();
+  user = null; profile = null;
+  document.getElementById('authContainer').style.display = 'block';
+  document.getElementById('mainApp').style.display = 'none';
+}
+
+async function loadRecords() {
+  if (!user) return [];
+  const { data, error } = await sb.from('study_records').select('*').eq('user_id', user.id).order('date');
+  if (error) { console.error(error); return []; }
+  document.getElementById('recordCount').textContent = data.length+'条';
+  renderAll(data);
+  return data;
+}
+
+async function addRecord() {
+  if (!user) return;
+  const date = document.getElementById('recDate').value;
+  const ch = document.getElementById('recChinese').value;
+  const ma = document.getElementById('recMath').value;
+  const en = document.getElementById('recEnglish').value;
+  const wc = document.getElementById('recWC').value;
+  const wm = document.getElementById('recWM').value;
+  const we = document.getElementById('recWE').value;
+  if (!date) { alert('请选择日期'); return; }
+  if (!ch&&!ma&&!en&&!wc&&!wm&&!we) { alert('至少填写一项'); return; }
+
+  const record = {
+    user_id: user.id, date,
+    chinese: ch?parseFloat(ch):null, math: ma?parseFloat(ma):null, english: en?parseFloat(en):null,
+    wrong_chinese: wc?parseInt(wc):null, wrong_math: wm?parseInt(wm):null, wrong_english: we?parseInt(we):null
+  };
+
+  try {
+    const { error } = await sb.from('study_records').upsert(record, { onConflict: 'user_id, date' });
+    if (error) throw error;
+    ['recChinese','recMath','recEnglish','recWC','recWM','recWE'].forEach(id=>document.getElementById(id).value='');
+    loadRecords();
+  } catch(e) { alert('保存失败: '+e.message); }
+}
+
+async function deleteRecord(id) {
+  if (!confirm('确定删除？')) return;
+  const { error } = await sb.from('study_records').delete().eq('id',id).eq('user_id',user.id);
+  if (error) { alert('删除失败'); return; }
+  loadRecords();
+}
+
+function calcComposite(r) {
+  const scores = [r.chinese,r.math,r.english].filter(s=>s!==null&&s!==undefined);
+  if (!scores.length) return null;
+  const avg = scores.map(s=>(s/150)*100).reduce((a,b)=>a+b,0)/scores.length;
+  const penalty = ((r.wrong_chinese||0)+(r.wrong_math||0)+(r.wrong_english||0))*1.5;
+  return Math.max(0, Math.round((avg-penalty)*10)/10);
+}
+
+function renderStats(records) {
+  const c = document.getElementById('stats');
+  if (!records.length) { c.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8">暂无数据</div>'; return; }
+  const withC = records.map(r=>({...r,comp:calcComposite(r)})).filter(r=>r.comp!==null);
+  const lc = [...records].reverse().find(r=>r.chinese!==null);
+  const lm = [...records].reverse().find(r=>r.math!==null);
+  const le = [...records].reverse().find(r=>r.english!==null);
+  const totalW = records.reduce((s,r)=>(s+(r.wrong_chinese||0)+(r.wrong_math||0)+(r.wrong_english||0)),0);
+  let prog = 'neutral', plabel='保持稳定';
+  if (withC.length>=2) {
+    const d = withC[withC.length-1].comp - withC[withC.length-2].comp;
+    if (d>2) { prog='up'; plabel='进步中'; } else if (d<-2) { prog='down'; plabel='需关注'; }
+  }
+  c.innerHTML = `
+    <div class="stat-card"><div class="label">综合评分</div><div class="value" style="color:#3b82f6">${withC.length?withC[withC.length-1].comp:'-'}</div><div class="sub" style="color:${prog==='up'?'#10b981':prog==='down'?'#ef4444':'#64748b'}">${plabel}</div></div>
+    <div class="stat-card"><div class="label">语文</div><div class="value" style="color:#ef4444">${lc?lc.chinese:'-'}</div><div class="sub">错题 ${lc?lc.wrong_chinese||0:'-'}</div></div>
+    <div class="stat-card"><div class="label">数学</div><div class="value" style="color:#f59e0b">${lm?lm.math:'-'}</div><div class="sub">错题 ${lm?lm.wrong_math||0:'-'}</div></div>
+    <div class="stat-card"><div class="label">英语</div><div class="value" style="color:#10b981">${le?le.english:'-'}</div><div class="sub">错题 ${le?le.wrong_english||0:'-'}</div></div>
+    <div class="stat-card"><div class="label">累计总错题</div><div class="value" style="color:#8b5cf6">${totalW}</div><div class="sub">平均${records.length?(totalW/records.length).toFixed(1):'0'}题/天</div></div>`;
+}
+
+function renderChart(records) {
+  const ctx = document.getElementById('mainChart').getContext('2d');
+  if (chart) chart.destroy();
+  const labels = records.map(r=>r.date);
+  const ds = [];
+  const cl = {chinese:'#ef4444',math:'#f59e0b',english:'#10b981',wc:'#ef4444',wm:'#f59e0b',we:'#10b981',comp:'#3b82f6'};
+  const isW = curTab==='wrong';
+  if (curTab==='all') {
+    const cd=records.map(r=>r.chinese),md=records.map(r=>r.math),ed=records.map(r=>r.english);
+    if (cd.some(v=>v!==null)) ds.push({label:'语文',data:cd,borderColor:cl.chinese,backgroundColor:cl.chinese+'20',tension:.3,spanGaps:true,pointRadius:3});
+    if (md.some(v=>v!==null)) ds.push({label:'数学',data:md,borderColor:cl.math,backgroundColor:cl.math+'20',tension:.3,spanGaps:true,pointRadius:3});
+    if (ed.some(v=>v!==null)) ds.push({label:'英语',data:ed,borderColor:cl.english,backgroundColor:cl.english+'20',tension:.3,spanGaps:true,pointRadius:3});
+  } else if (curTab==='chinese') {
+    ds.push({label:'语文',data:records.map(r=>r.chinese),borderColor:cl.chinese,backgroundColor:cl.chinese+'20',tension:.3,spanGaps:true,pointRadius:4,fill:true});
+  } else if (curTab==='math') {
+    ds.push({label:'数学',data:records.map(r=>r.math),borderColor:cl.math,backgroundColor:cl.math+'20',tension:.3,spanGaps:true,pointRadius:4,fill:true});
+  } else if (curTab==='english') {
+    ds.push({label:'英语',data:records.map(r=>r.english),borderColor:cl.english,backgroundColor:cl.english+'20',tension:.3,spanGaps:true,pointRadius:4,fill:true});
+  } else if (curTab==='wrong') {
+    const wcd=records.map(r=>r.wrong_chinese),wmd=records.map(r=>r.wrong_math),wed=records.map(r=>r.wrong_english);
+    if (wcd.some(v=>v!==null)) ds.push({label:'语文错题',data:wcd,borderColor:cl.wc,backgroundColor:cl.wc+'20',tension:.3,spanGaps:true,pointRadius:3});
+    if (wmd.some(v=>v!==null)) ds.push({label:'数学错题',data:wmd,borderColor:cl.wm,backgroundColor:cl.wm+'20',tension:.3,spanGaps:true,pointRadius:3});
+    if (wed.some(v=>v!==null)) ds.push({label:'英语错题',data:wed,borderColor:cl.we,backgroundColor:cl.we+'20',tension:.3,spanGaps:true,pointRadius:3});
+  } else if (curTab==='composite') {
+    ds.push({label:'综合评分',data:records.map(r=>calcComposite(r)),borderColor:cl.comp,backgroundColor:cl.comp+'10',tension:.3,spanGaps:true,pointRadius:4,fill:true,borderWidth:2});
+  }
+  chart = new Chart(ctx, {type:'line',data:{labels,datasets:ds},options:{
+    responsive:true,maintainAspectRatio:false,
+    interaction:{intersect:false,mode:'index'},
+    plugins:{legend:{position:'bottom',labels:{usePointStyle:true,padding:18}}},
+    scales:{y:{beginAtZero:isW,max:isW?undefined:(curTab==='composite'?100:150),ticks:{callback:v=>v+(isW?'题':'分')}}}
+  }});
+}
+
+function renderTable(records) {
+  const c = document.getElementById('recordTable');
+  if (!records.length) { c.innerHTML='<div style="text-align:center;padding:30px;color:#94a3b8">暂无记录</div>'; return; }
+  let h='<table><thead><tr><th>日期</th><th>语文</th><th>数学</th><th>英语</th><th>语文错题</th><th>数学错题</th><th>英语错题</th><th>综合评分</th><th>操作</th></tr></thead><tbody>';
+  [...records].reverse().forEach(r=>{
+    const comp=calcComposite(r);
+    h+=`<tr><td>${r.date}</td><td>${r.chinese??'-'}</td><td>${r.math??'-'}</td><td>${r.english??'-'}</td><td>${r.wrong_chinese??'-'}</td><td>${r.wrong_math??'-'}</td><td>${r.wrong_english??'-'}</td><td style="font-weight:600;color:#3b82f6">${comp??'-'}</td><td><button class="del-btn" onclick="deleteRecord('${r.id}')">删除</button></td></tr>`;
+  });
+  h+='</tbody></table>';
+  c.innerHTML=h;
+}
+
+function swTab(t,btn) {
+  curTab=t;
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  loadRecords();
+}
+
+function renderAll(records) {
+  renderStats(records);
+  renderChart(records);
+  renderTable(records);
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
