@@ -4,7 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>家庭学习追踪</title>
-<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>window.supabase||document.write('<script src="https://unpkg.com/@supabase/supabase-js@2"><\/script>')</script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3"></script>
 <style>
@@ -111,7 +112,7 @@ tr:hover{background:#f8fafc}
   <div class="header">
     <h1>家庭学习追踪</h1>
     <p>期末冲刺 · 趋势预测 · 全家实时同步</p>
-    <p style="font-size:11px;color:#94a3b8;margin-top:2px">v2.1 · 2026-05-24</p>
+    <p style="font-size:11px;color:#94a3b8;margin-top:2px">v2.2 · 2026-05-24</p>
   </div>
 
   <div id="authContainer" class="auth-card">
@@ -481,6 +482,10 @@ function renderTable(records){
 
 // ============ 初始化 & 登录 ============
 async function init(){
+  if(!window.supabase){
+    document.getElementById('authContainer').innerHTML='<div style="text-align:center;padding:40px;color:#ef4444"><p>Supabase 库加载失败</p><p style="font-size:13px;color:#64748b">请检查网络或刷新页面</p></div>';
+    return;
+  }
   sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
   const{data:{session}}=await sb.auth.getSession();
   if(session){user=session.user;await loadProfile();showApp();}
@@ -599,4 +604,9 @@ function swTab(t,btn){
   curTab=t;
   document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
-  loadRecords()
+  loadRecords();
+}
+document.addEventListener('DOMContentLoaded',init);
+</script>
+</body>
+</html>
