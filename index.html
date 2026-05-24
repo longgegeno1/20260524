@@ -6,81 +6,103 @@
 <title>家庭学习追踪</title>
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3"></script>
 <style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body {font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif; background: #f0f4f8; color: #1e293b; line-height: 1.5; min-height: 100vh;}
-.container {max-width: 1000px; margin: 0 auto; padding: 20px 16px;}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif;background:#f0f4f8;color:#1e293b;line-height:1.5;min-height:100vh}
+.container{max-width:1100px;margin:0 auto;padding:20px 16px}
 
-.header {text-align: center; margin-bottom: 28px; padding: 28px 20px 20px;}
-.header h1 {font-size: 24px; color: #0f172a; margin-bottom: 6px;}
-.header p {color: #64748b; font-size: 14px;}
-.header .dot {display: inline-block; width: 7px; height: 7px; background: #10b981; border-radius: 50%; margin: 0 6px; animation: pulse 2s infinite;}
-@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+.header{text-align:center;margin-bottom:24px;padding:24px 20px 16px}
+.header h1{font-size:24px;color:#0f172a;margin-bottom:4px}
+.header p{color:#64748b;font-size:13px}
 
-.auth-card {max-width: 380px; margin: 30px auto; background: #fff; border-radius: 14px; padding: 28px 24px; box-shadow: 0 2px 12px rgba(0,0,0,0.06);}
-.auth-card h2 {font-size: 20px; text-align: center; margin-bottom: 4px;}
-.auth-card .sub {text-align: center; color: #94a3b8; font-size: 13px; margin-bottom: 20px;}
-.auth-tabs {display: flex; border-bottom: 1px solid #e2e8f0; margin-bottom: 20px;}
-.auth-tab {flex: 1; padding: 10px; border: none; background: none; font-size: 15px; font-weight: 600; color: #94a3b8; cursor: pointer; transition: all .2s;}
-.auth-tab.active {color: #3b82f6; border-bottom: 2px solid #3b82f6;}
-.field {margin-bottom: 16px;}
-.field label {display: block; font-size: 13px; color: #475569; margin-bottom: 5px; font-weight: 600;}
-.field input {width: 100%; padding: 10px 14px; border: 1.5px solid #cbd5e1; border-radius: 10px; font-size: 15px; transition: all .2s;}
-.field input:focus {outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1);}
-.btn {width: 100%; padding: 12px; border: none; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; transition: all .2s;}
-.btn-primary {background: #3b82f6; color: #fff;}
-.btn-primary:hover {background: #2563eb;}
-.btn-outline {background: #fff; color: #475569; border: 1.5px solid #cbd5e1;}
-.btn-outline:hover {background: #f8fafc;}
-.btn-sm {width: auto; padding: 7px 16px; font-size: 13px;}
-.error-msg {color: #ef4444; font-size: 13px; text-align: center; margin-top: 8px;}
+.auth-card{max-width:380px;margin:30px auto;background:#fff;border-radius:14px;padding:28px 24px;box-shadow:0 2px 12px rgba(0,0,0,.06)}
+.auth-card h2{font-size:20px;text-align:center;margin-bottom:4px}
+.auth-card .sub{text-align:center;color:#94a3b8;font-size:13px;margin-bottom:20px}
+.auth-tabs{display:flex;border-bottom:1px solid #e2e8f0;margin-bottom:20px}
+.auth-tab{flex:1;padding:10px;border:none;background:none;font-size:15px;font-weight:600;color:#94a3b8;cursor:pointer;transition:all .2s}
+.auth-tab.active{color:#3b82f6;border-bottom:2px solid #3b82f6}
+.field{margin-bottom:16px}
+.field label{display:block;font-size:13px;color:#475569;margin-bottom:5px;font-weight:600}
+.field input{width:100%;padding:10px 14px;border:1.5px solid #cbd5e1;border-radius:10px;font-size:15px;transition:all .2s}
+.field input:focus{outline:none;border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.1)}
+.btn{width:100%;padding:12px;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;transition:all .2s}
+.btn-primary{background:#3b82f6;color:#fff}
+.btn-primary:hover{background:#2563eb}
+.btn-sm{width:auto;padding:7px 16px;font-size:13px}
+.btn-xs{width:auto;padding:5px 10px;font-size:11px}
+.error-msg{color:#ef4444;font-size:13px;text-align:center;margin-top:8px}
 
-.main-app {display: none;}
-.user-bar {display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 14px 18px; background: #fff; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);}
-.user-info {display: flex; align-items: center; gap: 10px;}
-.avatar {width: 38px; height: 38px; background: linear-gradient(135deg, #8b5cf6, #3b82f6); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 15px;}
-.user-details h3 {font-size: 15px; margin-bottom: 1px;}
-.user-details span {font-size: 12px; color: #64748b;}
-.logout-btn {padding: 7px 14px; background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13px; cursor: pointer;}
-.logout-btn:hover {background: #e2e8f0;}
+.main-app{display:none}
+.user-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding:12px 18px;background:#fff;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.user-info{display:flex;align-items:center;gap:10px}
+.avatar{width:36px;height:36px;background:linear-gradient(135deg,#8b5cf6,#3b82f6);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px}
+.user-details h3{font-size:14px;margin-bottom:1px}
+.user-details span{font-size:12px;color:#64748b}
+.logout-btn{padding:6px 12px;background:#f1f5f9;color:#475569;border:1px solid #cbd5e1;border-radius:8px;font-size:12px;cursor:pointer}
+.logout-btn:hover{background:#e2e8f0}
 
-.card {background: #fff; border-radius: 14px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-bottom: 20px;}
-.card h2 {font-size: 17px; color: #0f172a; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 2px solid #f1f5f9;}
+.card{background:#fff;border-radius:14px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.05);margin-bottom:16px}
+.card h2{font-size:16px;color:#0f172a;margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid #f1f5f9}
 
-.form-grid {display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; align-items: end;}
-.form-group {display: flex; flex-direction: column;}
-.form-group label {font-size: 12px; color: #64748b; margin-bottom: 4px; font-weight: 600;}
-.form-group input {padding: 8px 10px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 14px; transition: all .2s;}
-.form-group input:focus {outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1);}
-.form-group input[type="date"] {color: #1e293b;}
+/* 目标设定卡片 */
+.goal-card{background:linear-gradient(135deg,#1e293b,#334155);border-radius:14px;padding:20px 24px;margin-bottom:16px;color:#fff}
+.goal-card h2{font-size:16px;color:#e2e8f0;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,.1)}
+.goal-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;align-items:end}
+.goal-field{display:flex;flex-direction:column}
+.goal-field label{font-size:12px;color:#94a3b8;margin-bottom:4px;font-weight:600}
+.goal-field input{padding:8px 10px;border:1px solid #475569;border-radius:8px;font-size:14px;background:#1e293b;color:#e2e8f0;transition:all .2s}
+.goal-field input:focus{outline:none;border-color:#3b82f6}
+.goal-btn{width:auto;padding:8px 16px;background:#3b82f6;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;height:38px}
 
-.stats-grid {display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; margin-bottom: 20px;}
-.stat-card {background: #fff; border-radius: 12px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); text-align: center;}
-.stat-card .label {font-size: 12px; color: #64748b; margin-bottom: 6px;}
-.stat-card .value {font-size: 28px; font-weight: 700;}
-.stat-card .sub {font-size: 11px; color: #94a3b8; margin-top: 2px;}
+/* 预测卡片 */
+.predict-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:16px}
+.predict-card{background:#fff;border-radius:12px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,.05);text-align:center;position:relative;overflow:hidden}
+.predict-card .subj{font-size:14px;font-weight:700;margin-bottom:10px}
+.predict-card .row{display:flex;justify-content:space-around;margin-bottom:6px}
+.predict-card .item{text-align:center}
+.predict-card .item .lbl{font-size:11px;color:#94a3b8;margin-bottom:2px}
+.predict-card .item .num{font-size:22px;font-weight:700}
+.predict-card .gap{margin-top:8px;padding:6px 12px;border-radius:6px;font-size:13px;font-weight:600}
+.gap-on{background:#dcfce7;color:#16a34a}
+.gap-close{background:#fef9c3;color:#ca8a04}
+.gap-off{background:#fee2e2;color:#dc2626}
+.predict-card .confidence{margin-top:6px;font-size:11px;color:#94a3b8}
 
-.chart-wrap {position: relative; height: 300px;}
-.tabs {display: flex; gap: 4px; margin-bottom: 14px; flex-wrap: wrap;}
-.tab {padding: 7px 14px; border-radius: 8px 8px 0 0; background: #f1f5f9; border: none; cursor: pointer; font-size: 12px; font-weight: 600; color: #475569; transition: all .2s;}
-.tab.active {background: #3b82f6; color: #fff;}
-.tab:hover:not(.active) {background: #e2e8f0;}
+/* 统计区 */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:16px}
+.stat-card{background:#fff;border-radius:12px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,.05);text-align:center}
+.stat-card .label{font-size:12px;color:#64748b;margin-bottom:4px}
+.stat-card .value{font-size:26px;font-weight:700}
+.stat-card .sub{font-size:11px;color:#94a3b8;margin-top:2px}
 
-.table-wrap {overflow-x: auto; border-radius: 10px; border: 1px solid #e2e8f0;}
-table {width: 100%; border-collapse: collapse; font-size: 12px;}
-th {background: #f8fafc; color: #475569; font-weight: 600; padding: 10px 12px; text-align: left; border-bottom: 2px solid #e2e8f0; white-space: nowrap;}
-td {padding: 8px 12px; border-bottom: 1px solid #f1f5f9;}
-tr:hover {background: #f8fafc;}
-.del-btn {padding: 3px 8px; background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; border-radius: 5px; font-size: 11px; cursor: pointer;}
-.del-btn:hover {background: #fee2e2;}
+/* 表单 */
+.form-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;align-items:end}
+.form-group{display:flex;flex-direction:column}
+.form-group label{font-size:11px;color:#64748b;margin-bottom:3px;font-weight:600}
+.form-group input{padding:7px 9px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:13px;transition:all .2s}
+.form-group input:focus{outline:none;border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.1)}
+.form-group input[type="date"]{color:#1e293b}
 
-.loading {text-align: center; padding: 30px; color: #94a3b8;}
+.chart-wrap{position:relative;height:320px}
+.tabs{display:flex;gap:4px;margin-bottom:12px;flex-wrap:wrap}
+.tab{padding:6px 12px;border-radius:7px 7px 0 0;background:#f1f5f9;border:none;cursor:pointer;font-size:12px;font-weight:600;color:#475569;transition:all .2s}
+.tab.active{background:#3b82f6;color:#fff}
+.tab:hover:not(.active){background:#e2e8f0}
 
-@media (max-width: 640px) {
-  .form-grid {grid-template-columns: 1fr 1fr;}
-  .header h1 {font-size: 20px;}
-  .stats-grid {grid-template-columns: 1fr 1fr;}
-  .stat-card .value {font-size: 22px;}
+.table-wrap{overflow-x:auto;border-radius:10px;border:1px solid #e2e8f0}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{background:#f8fafc;color:#475569;font-weight:600;padding:9px 10px;text-align:left;border-bottom:2px solid #e2e8f0;white-space:nowrap}
+td{padding:7px 10px;border-bottom:1px solid #f1f5f9}
+tr:hover{background:#f8fafc}
+.del-btn{padding:2px 7px;background:#fef2f2;color:#dc2626;border:1px solid #fecaca;border-radius:5px;font-size:11px;cursor:pointer}
+.del-btn:hover{background:#fee2e2}
+
+@media(max-width:640px){
+  .form-grid{grid-template-columns:1fr 1fr}
+  .goal-grid{grid-template-columns:1fr 1fr}
+  .predict-grid{grid-template-columns:1fr}
+  .header h1{font-size:20px}
 }
 </style>
 </head>
@@ -88,8 +110,7 @@ tr:hover {background: #f8fafc;}
 <div class="container">
   <div class="header">
     <h1>家庭学习追踪</h1>
-    <p>全家共用，数据云端实时同步</p>
-    <p style="font-size:12px;color:#94a3b8;margin-top:4px;"><span class="dot"></span>支持电脑 / iPad / 手机同时访问</p>
+    <p>期末冲刺 · 趋势预测 · 全家实时同步</p>
   </div>
 
   <div id="authContainer" class="auth-card">
@@ -100,16 +121,16 @@ tr:hover {background: #f8fafc;}
       <button class="auth-tab" id="tabRegister" onclick="switchTab('register')">注册</button>
     </div>
     <div id="formLogin">
-      <div class="field"><label>邮箱</label><input type="email" id="loginEmail" placeholder="your@email.com" autocomplete="email"></div>
-      <div class="field"><label>密码</label><input type="password" id="loginPassword" placeholder="至少6位" autocomplete="current-password"></div>
+      <div class="field"><label>邮箱</label><input type="email" id="loginEmail" placeholder="your@email.com"></div>
+      <div class="field"><label>密码</label><input type="password" id="loginPassword" placeholder="至少6位"></div>
       <p class="error-msg" id="loginError"></p>
       <button class="btn btn-primary" onclick="doLogin()">登录</button>
     </div>
     <div id="formRegister" style="display:none">
-      <div class="field"><label>家庭名称</label><input type="text" id="regFamily" placeholder="例如：张家" autocomplete="off"></div>
-      <div class="field"><label>孩子姓名</label><input type="text" id="regChild" placeholder="例如：小明" autocomplete="off"></div>
-      <div class="field"><label>邮箱</label><input type="email" id="regEmail" placeholder="your@email.com" autocomplete="email"></div>
-      <div class="field"><label>密码</label><input type="password" id="regPassword" placeholder="至少6位" autocomplete="new-password"></div>
+      <div class="field"><label>家庭名称</label><input type="text" id="regFamily" placeholder="例如：张家"></div>
+      <div class="field"><label>孩子姓名</label><input type="text" id="regChild" placeholder="例如：小明"></div>
+      <div class="field"><label>邮箱</label><input type="email" id="regEmail" placeholder="your@email.com"></div>
+      <div class="field"><label>密码</label><input type="password" id="regPassword" placeholder="至少6位"></div>
       <p class="error-msg" id="regError"></p>
       <button class="btn btn-primary" onclick="doRegister()">注册家庭账号</button>
     </div>
@@ -121,19 +142,35 @@ tr:hover {background: #f8fafc;}
         <div class="avatar" id="userAvatar">家</div>
         <div class="user-details"><h3 id="familyName"></h3><span id="childName"></span></div>
       </div>
-      <div style="display:flex;align-items:center;gap:12px">
-        <span style="font-size:12px;color:#94a3b8" id="recordCount">0条</span>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:11px;color:#94a3b8" id="recordCount">0条</span>
         <button class="logout-btn" onclick="doLogout()">退出</button>
       </div>
     </div>
 
+    <!-- 期末目标设定 -->
+    <div class="goal-card" id="goalCard">
+      <h2>期末目标设定（6月下旬）</h2>
+      <div class="goal-grid">
+        <div class="goal-field"><label>目标日期</label><input type="date" id="goalDate" value="2026-06-25"></div>
+        <div class="goal-field"><label>语文目标</label><input type="number" id="goalChinese" placeholder="目标分" min="0" max="100" step="0.5"></div>
+        <div class="goal-field"><label>数学目标</label><input type="number" id="goalMath" placeholder="目标分" min="0" max="100" step="0.5"></div>
+        <div class="goal-field"><label>英语目标</label><input type="number" id="goalEnglish" placeholder="目标分" min="0" max="100" step="0.5"></div>
+        <div class="goal-field"><label>&nbsp;</label><button class="goal-btn" onclick="saveGoals()">保存目标</button></div>
+      </div>
+    </div>
+
+    <!-- 预测面板 -->
+    <div class="predict-grid" id="predictPanel"></div>
+
+    <!-- 录入 -->
     <div class="card">
-      <h2>录入学习数据</h2>
+      <h2>录入学习数据（满分100）</h2>
       <div class="form-grid">
         <div class="form-group"><label>日期</label><input type="date" id="recDate"></div>
-        <div class="form-group"><label>语文分数</label><input type="number" id="recChinese" placeholder="0-150" min="0" max="150" step="0.5"></div>
-        <div class="form-group"><label>数学分数</label><input type="number" id="recMath" placeholder="0-150" min="0" max="150" step="0.5"></div>
-        <div class="form-group"><label>英语分数</label><input type="number" id="recEnglish" placeholder="0-150" min="0" max="150" step="0.5"></div>
+        <div class="form-group"><label>语文</label><input type="number" id="recChinese" placeholder="0-100" min="0" max="100" step="0.5"></div>
+        <div class="form-group"><label>数学</label><input type="number" id="recMath" placeholder="0-100" min="0" max="100" step="0.5"></div>
+        <div class="form-group"><label>英语</label><input type="number" id="recEnglish" placeholder="0-100" min="0" max="100" step="0.5"></div>
         <div class="form-group"><label>语文错题</label><input type="number" id="recWC" placeholder="错题数" min="0" max="50"></div>
         <div class="form-group"><label>数学错题</label><input type="number" id="recWM" placeholder="错题数" min="0" max="50"></div>
         <div class="form-group"><label>英语错题</label><input type="number" id="recWE" placeholder="错题数" min="0" max="50"></div>
@@ -141,246 +178,378 @@ tr:hover {background: #f8fafc;}
       </div>
     </div>
 
+    <!-- 综合统计 -->
     <div class="stats-grid" id="stats"></div>
 
+    <!-- 趋势图 -->
     <div class="card">
-      <h2>趋势图表</h2>
+      <h2>趋势与预测</h2>
       <div class="tabs">
-        <button class="tab active" onclick="swTab('all',this)">全科对比</button>
-        <button class="tab" onclick="swTab('chinese',this)">语文</button>
-        <button class="tab" onclick="swTab('math',this)">数学</button>
-        <button class="tab" onclick="swTab('english',this)">英语</button>
+        <button class="tab active" onclick="swTab('chinese',this)">语文+预测</button>
+        <button class="tab" onclick="swTab('math',this)">数学+预测</button>
+        <button class="tab" onclick="swTab('english',this)">英语+预测</button>
+        <button class="tab" onclick="swTab('all',this)">全科对比</button>
         <button class="tab" onclick="swTab('wrong',this)">错题对比</button>
-        <button class="tab" onclick="swTab('composite',this)">综合评分</button>
       </div>
       <div class="chart-wrap"><canvas id="mainChart"></canvas></div>
     </div>
 
+    <!-- 历史 -->
     <div class="card">
       <h2>历史记录</h2>
-      <div class="table-wrap" id="recordTable"><div class="loading">加载中...</div></div>
+      <div class="table-wrap" id="recordTable"><div style="text-align:center;padding:30px;color:#94a3b8">加载中...</div></div>
     </div>
   </div>
 </div>
 
 <script>
-// ============ 配置区 ============
 const SUPABASE_URL = 'https://rzwoomeuagpdqwhfpsxa.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ6d29vbWV1YWdwZHF3aGZwc3hhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2MTE4MTgsImV4cCI6MjA5NTE4NzgxOH0.ohJWzfDYCIUOLa9X2bKvnGes9Rm3f0QbDm_Tu1O8SOo';
-// ===============================
 
-let sb = null, chart = null, curTab = 'all', user = null, profile = null;
+let sb=null,chart=null,curTab='chinese',user=null,profile=null;
 
-async function init() {
-  if (SUPABASE_URL === 'YOUR_SUPABASE_URL') {
-    document.getElementById('authContainer').innerHTML = 
-      '<div style="text-align:center;padding:40px;color:#64748b"><p style="font-size:16px;margin-bottom:12px">请先配置 Supabase</p><p style="font-size:13px">将 index.html 中的 YOUR_SUPABASE_URL 和 YOUR_ANON_KEY 替换为你的 Supabase 项目信息</p></div>';
-    return;
+// ============ 目标存储 ============
+function getGoalKey(){return user?'goal_'+user.id:'goal_default';}
+function getGoals(){
+  const d=JSON.parse(localStorage.getItem(getGoalKey())||'{}');
+  return{date:d.date||'2026-06-25',chinese:d.chinese||null,math:d.math||null,english:d.english||null};
+}
+function setGoals(g){localStorage.setItem(getGoalKey(),JSON.stringify(g));}
+
+// ============ 线性回归预测 ============
+function linearRegression(points){
+  // points: [{x: dayNumber, y: score}]
+  const n=points.length;
+  if(n<2)return null;
+  let sx=0,sy=0,sxy=0,sx2=0;
+  for(const p of points){sx+=p.x;sy+=p.y;sxy+=p.x*p.y;sx2+=p.x*p.x;}
+  const slope=(n*sxy-sx*sy)/(n*sx2-sx*sx);
+  const intercept=(sy-slope*sx)/n;
+  // R²
+  const yMean=sy/n;
+  let ssRes=0,ssTot=0;
+  for(const p of points){const yp=slope*p.x+intercept;ssRes+=(p.y-yp)**2;ssTot+=(p.y-yMean)**2;}
+  const r2=ssTot===0?0:1-ssRes/ssTot;
+  return{slope,intercept,r2:Math.max(0,Math.min(1,r2)),n};
+}
+
+function predictAtDate(records,field,targetDateStr){
+  const points=[];
+  const firstDate=records.length?new Date(records[0].date):null;
+  if(!firstDate)return null;
+  for(const r of records){
+    const v=r[field];
+    if(v===null||v===undefined)continue;
+    const d=new Date(r.date);
+    const dayNum=(d-firstDate)/(1000*60*60*24);
+    points.push({x:dayNum,y:v});
   }
-  sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-  const { data: { session } } = await sb.auth.getSession();
-  if (session) { user = session.user; await loadProfile(); showApp(); }
+  const lr=linearRegression(points);
+  if(!lr)return null;
+  const targetDay=(new Date(targetDateStr)-firstDate)/(1000*60*60*24);
+  const predicted=lr.slope*targetDay+lr.intercept;
+  return{...lr,predicted:Math.max(0,Math.min(100,Math.round(predicted*10)/10)),targetDay};
 }
 
-function switchTab(t) {
-  document.getElementById('tabLogin').classList.toggle('active', t==='login');
-  document.getElementById('tabRegister').classList.toggle('active', t==='register');
-  document.getElementById('formLogin').style.display = t==='login'?'block':'none';
-  document.getElementById('formRegister').style.display = t==='register'?'block':'none';
-  document.getElementById('authTitle').textContent = t==='login'?'登录':'注册';
-  document.getElementById('authSub').textContent = t==='login'?'已有账号请登录':'创建家庭账号';
-  document.getElementById('loginError').textContent = '';
-  document.getElementById('regError').textContent = '';
-}
-
-async function doRegister() {
-  const family = document.getElementById('regFamily').value.trim();
-  const child = document.getElementById('regChild').value.trim();
-  const email = document.getElementById('regEmail').value.trim();
-  const password = document.getElementById('regPassword').value;
-  document.getElementById('regError').textContent = '';
-  if (!family||!child||!email||!password) { document.getElementById('regError').textContent='请填写所有字段'; return; }
-  if (password.length<6) { document.getElementById('regError').textContent='密码至少6位'; return; }
-  try {
-    const { data, error } = await sb.auth.signUp({ email, password, options: { data: { family_name: family, child_name: child } } });
-    if (error) throw error;
-    if (data.user?.identities?.length === 0) {
-      document.getElementById('regError').textContent = '该邮箱已注册，请直接登录';
-      return;
+// ============ 渲染预测面板 ============
+function renderPredictPanel(records,goals){
+  const c=document.getElementById('predictPanel');
+  const subjs=[
+    {key:'chinese',name:'语文',color:'#ef4444'},
+    {key:'math',name:'数学',color:'#f59e0b'},
+    {key:'english',name:'英语',color:'#10b981'}
+  ];
+  let html='';
+  for(const s of subjs){
+    const pred=predictAtDate(records,s.key,goals.date);
+    const target=goals[s.key];
+    const latestRec=[...records].reverse().find(r=>r[s.key]!==null);
+    const latest=latestRec?latestRec[s.key]:null;
+    if(!pred){
+      html+=`<div class="predict-card"><div class="subj" style="color:${s.color}">${s.name}</div><div style="color:#94a3b8;font-size:13px;padding:20px 0">需要至少2次${s.name}成绩才能预测</div></div>`;
+      continue;
     }
-    alert('注册成功！请检查邮箱完成验证后登录。\n（如未收到邮件，可在 Supabase Dashboard > Authentication 中关闭邮件验证）');
-    switchTab('login');
-  } catch(e) { document.getElementById('regError').textContent = e.message; }
-}
-
-async function doLogin() {
-  const email = document.getElementById('loginEmail').value.trim();
-  const password = document.getElementById('loginPassword').value;
-  document.getElementById('loginError').textContent = '';
-  if (!email||!password) { document.getElementById('loginError').textContent='请填写邮箱和密码'; return; }
-  try {
-    const { data, error } = await sb.auth.signInWithPassword({ email, password });
-    if (error) throw error;
-    user = data.user;
-    await loadProfile();
-    showApp();
-  } catch(e) { document.getElementById('loginError').textContent = e.message; }
-}
-
-async function loadProfile() {
-  if (!user) return;
-  const meta = user.user_metadata || {};
-  profile = { family_name: meta.family_name || '我的家庭', child_name: meta.child_name || '孩子' };
-  document.getElementById('familyName').textContent = profile.family_name;
-  document.getElementById('childName').textContent = profile.child_name;
-  document.getElementById('userAvatar').textContent = profile.family_name.charAt(0);
-}
-
-function showApp() {
-  document.getElementById('authContainer').style.display = 'none';
-  document.getElementById('mainApp').style.display = 'block';
-  document.getElementById('recDate').value = new Date().toISOString().slice(0,10);
-  loadRecords();
-}
-
-async function doLogout() {
-  await sb.auth.signOut();
-  user = null; profile = null;
-  document.getElementById('authContainer').style.display = 'block';
-  document.getElementById('mainApp').style.display = 'none';
-}
-
-async function loadRecords() {
-  if (!user) return [];
-  const { data, error } = await sb.from('study_records').select('*').eq('user_id', user.id).order('date');
-  if (error) { console.error(error); return []; }
-  document.getElementById('recordCount').textContent = data.length+'条';
-  renderAll(data);
-  return data;
-}
-
-async function addRecord() {
-  if (!user) return;
-  const date = document.getElementById('recDate').value;
-  const ch = document.getElementById('recChinese').value;
-  const ma = document.getElementById('recMath').value;
-  const en = document.getElementById('recEnglish').value;
-  const wc = document.getElementById('recWC').value;
-  const wm = document.getElementById('recWM').value;
-  const we = document.getElementById('recWE').value;
-  if (!date) { alert('请选择日期'); return; }
-  if (!ch&&!ma&&!en&&!wc&&!wm&&!we) { alert('至少填写一项'); return; }
-
-  const record = {
-    user_id: user.id, date,
-    chinese: ch?parseFloat(ch):null, math: ma?parseFloat(ma):null, english: en?parseFloat(en):null,
-    wrong_chinese: wc?parseInt(wc):null, wrong_math: wm?parseInt(wm):null, wrong_english: we?parseInt(we):null
-  };
-
-  try {
-    const { error } = await sb.from('study_records').upsert(record, { onConflict: 'user_id, date' });
-    if (error) throw error;
-    ['recChinese','recMath','recEnglish','recWC','recWM','recWE'].forEach(id=>document.getElementById(id).value='');
-    loadRecords();
-  } catch(e) { alert('保存失败: '+e.message); }
-}
-
-async function deleteRecord(id) {
-  if (!confirm('确定删除？')) return;
-  const { error } = await sb.from('study_records').delete().eq('id',id).eq('user_id',user.id);
-  if (error) { alert('删除失败'); return; }
-  loadRecords();
-}
-
-function calcComposite(r) {
-  const scores = [r.chinese,r.math,r.english].filter(s=>s!==null&&s!==undefined);
-  if (!scores.length) return null;
-  const avg = scores.map(s=>(s/150)*100).reduce((a,b)=>a+b,0)/scores.length;
-  const penalty = ((r.wrong_chinese||0)+(r.wrong_math||0)+(r.wrong_english||0))*1.5;
-  return Math.max(0, Math.round((avg-penalty)*10)/10);
-}
-
-function renderStats(records) {
-  const c = document.getElementById('stats');
-  if (!records.length) { c.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8">暂无数据</div>'; return; }
-  const withC = records.map(r=>({...r,comp:calcComposite(r)})).filter(r=>r.comp!==null);
-  const lc = [...records].reverse().find(r=>r.chinese!==null);
-  const lm = [...records].reverse().find(r=>r.math!==null);
-  const le = [...records].reverse().find(r=>r.english!==null);
-  const totalW = records.reduce((s,r)=>(s+(r.wrong_chinese||0)+(r.wrong_math||0)+(r.wrong_english||0)),0);
-  let prog = 'neutral', plabel='保持稳定';
-  if (withC.length>=2) {
-    const d = withC[withC.length-1].comp - withC[withC.length-2].comp;
-    if (d>2) { prog='up'; plabel='进步中'; } else if (d<-2) { prog='down'; plabel='需关注'; }
+    const predicted=pred.predicted;
+    let gapClass='gap-on',gapText='可达标';
+    if(target!==null){
+      const diff=predicted-target;
+      if(diff>=-2)gapClass='gap-on',gapText=`可达标 (+${diff.toFixed(1)})`;
+      else if(diff>=-8)gapClass='gap-close',gapText=`需努力 (${diff.toFixed(1)})`;
+      else gapClass='gap-off',gapText=`差距大 (${diff.toFixed(1)})`;
+    }
+    const trend=pred.slope>0.5?'📈 上升':pred.slope<-0.5?'📉 下降':'➡ 持平';
+    html+=`
+    <div class="predict-card">
+      <div class="subj" style="color:${s.color}">${s.name}</div>
+      <div class="row">
+        <div class="item"><div class="lbl">最近</div><div class="num" style="color:${s.color}">${latest??'-'}</div></div>
+        <div class="item"><div class="lbl">预测期末</div><div class="num" style="color:#3b82f6">${predicted}</div></div>
+        ${target!==null?`<div class="item"><div class="lbl">目标</div><div class="num">${target}</div></div>`:''}
+      </div>
+      ${target!==null?`<div class="gap ${gapClass}">${gapText}</div>`:''}
+      <div class="confidence">趋势 ${trend} · 置信度 ${Math.round(pred.r2*100)}%</div>
+    </div>`;
   }
-  c.innerHTML = `
+  c.innerHTML=html;
+}
+
+// ============ 趋势图（含预测线） ============
+function renderChart(records,goals){
+  const ctx=document.getElementById('mainChart').getContext('2d');
+  if(chart)chart.destroy();
+  const isW=curTab==='wrong';
+  const isAll=curTab==='all';
+  const labels=records.map(r=>r.date);
+  const ds=[];
+  const cl={chinese:'#ef4444',math:'#f59e0b',english:'#10b981'};
+
+  // 添加目标日期标签
+  let allLabels=[...labels];
+  const goalDate=goals.date;
+  const hasGoal=goalDate&&!labels.includes(goalDate);
+  if(hasGoal)allLabels.push(goalDate);
+
+  if(isAll){
+    for(const k of['chinese','math','english']){
+      const data=records.map(r=>r[k]);
+      if(data.some(v=>v!==null))ds.push({label:k==='chinese'?'语文':k==='math'?'数学':'英语',data,borderColor:cl[k],backgroundColor:cl[k]+'20',tension:.3,spanGaps:true,pointRadius:3});
+    }
+  }else if(isW){
+    for(const k of['chinese','math','english']){
+      const f='wrong_'+k;const data=records.map(r=>r[f]);
+      if(data.some(v=>v!==null))ds.push({label:k==='chinese'?'语文错题':k==='math'?'数学错题':'英语错题',data,borderColor:cl[k],backgroundColor:cl[k]+'20',tension:.3,spanGaps:true,pointRadius:3});
+    }
+  }else{
+    // 单科：真实数据 + 预测线
+    const realData=records.map(r=>r[curTab]);
+    ds.push({
+      label:curTab==='chinese'?'语文':curTab==='math'?'数学':'英语',
+      data:realData,borderColor:cl[curTab],backgroundColor:cl[curTab]+'20',
+      tension:.3,spanGaps:true,pointRadius:4,fill:true,order:2
+    });
+
+    // 预测线
+    const pred=predictAtDate(records,curTab,goalDate);
+    if(pred&&hasGoal){
+      // 现有数据的x位置
+      const firstDate=new Date(records[0].date);
+      const fitData=labels.map(r=>{
+        const d=new Date(r);const dn=(d-firstDate)/(1000*60*60*24);
+        return pred.slope*dn+pred.intercept;
+      });
+      // 扩展到目标日期
+      const lastIdx=labels.length-1;
+      const goalDayNum=(new Date(goalDate)-firstDate)/(1000*60*60*24);
+      const lastDayNum=labels.length?((new Date(labels[lastIdx])-firstDate)/(1000*60*60*24)):0;
+
+      // 预测段数据
+      const predData=new Array(allLabels.length).fill(null);
+      for(let i=0;i<labels.length;i++)predData[i]=fitData[i];
+      predData[allLabels.length-1]=pred.predicted;
+
+      ds.push({
+        label:'趋势预测',
+        data:predData,borderColor:cl[curTab],borderDash:[8,4],borderWidth:2,
+        pointRadius:[...Array(labels.length-1).fill(0),0,6],
+        pointBackgroundColor:[...Array(labels.length-1).fill('transparent'),'transparent',cl[curTab]],
+        tension:0,spanGaps:false,fill:false,order:1
+      });
+
+      // 目标线
+      if(goals[curTab]!==null){
+        ds.push({
+          label:'目标: '+goals[curTab]+'分',
+          data:new Array(allLabels.length).fill(goals[curTab]),
+          borderColor:'#64748b',borderDash:[4,4],borderWidth:1.5,
+          pointRadius:0,fill:false,order:3
+        });
+      }
+    }
+  }
+
+  chart=new Chart(ctx,{
+    type:'line',
+    data:{labels:hasGoal?allLabels:labels,datasets:ds},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      interaction:{intersect:false,mode:'index'},
+      plugins:{legend:{position:'bottom',labels:{usePointStyle:true,padding:18,padding:15}}},
+      scales:{
+        y:{
+          beginAtZero:isW,
+          max:isW?undefined:100,
+          ticks:{callback:v=>v+(isW?'题':'分')},
+          title:{display:!isW,text:isW?'':'分数（满分100）'}
+        }
+      }
+    }
+  });
+}
+
+// ============ 其余逻辑 ============
+function calcComposite(r){
+  const scores=[r.chinese,r.math,r.english].filter(s=>s!==null&&s!==undefined);
+  if(!scores.length)return null;
+  // 满分100，不需要归一化，直接取平均
+  const avg=scores.reduce((a,b)=>a+b,0)/scores.length;
+  const penalty=((r.wrong_chinese||0)+(r.wrong_math||0)+(r.wrong_english||0))*1;
+  return Math.max(0,Math.round((avg-penalty)*10)/10);
+}
+
+function renderStats(records){
+  const c=document.getElementById('stats');
+  if(!records.length){c.innerHTML='<div style="text-align:center;padding:20px;color:#94a3b8">暂无数据</div>';return;}
+  const withC=records.map(r=>({...r,comp:calcComposite(r)})).filter(r=>r.comp!==null);
+  const lc=[...records].reverse().find(r=>r.chinese!==null);
+  const lm=[...records].reverse().find(r=>r.math!==null);
+  const le=[...records].reverse().find(r=>r.english!==null);
+  const totalW=records.reduce((s,r)=>(s+(r.wrong_chinese||0)+(r.wrong_math||0)+(r.wrong_english||0)),0);
+  let prog='neutral',plabel='保持稳定';
+  if(withC.length>=2){
+    const d=withC[withC.length-1].comp-withC[withC.length-2].comp;
+    if(d>3){prog='up';plabel='进步中';}else if(d<-3){prog='down';plabel='需关注';}
+  }
+  c.innerHTML=`
     <div class="stat-card"><div class="label">综合评分</div><div class="value" style="color:#3b82f6">${withC.length?withC[withC.length-1].comp:'-'}</div><div class="sub" style="color:${prog==='up'?'#10b981':prog==='down'?'#ef4444':'#64748b'}">${plabel}</div></div>
     <div class="stat-card"><div class="label">语文</div><div class="value" style="color:#ef4444">${lc?lc.chinese:'-'}</div><div class="sub">错题 ${lc?lc.wrong_chinese||0:'-'}</div></div>
     <div class="stat-card"><div class="label">数学</div><div class="value" style="color:#f59e0b">${lm?lm.math:'-'}</div><div class="sub">错题 ${lm?lm.wrong_math||0:'-'}</div></div>
-    <div class="stat-card"><div class="label">英语</div><div class="value" style="color:#10b981">${le?le.english:'-'}</div><div class="sub">错题 ${le?le.wrong_english||0:'-'}</div></div>
-    <div class="stat-card"><div class="label">累计总错题</div><div class="value" style="color:#8b5cf6">${totalW}</div><div class="sub">平均${records.length?(totalW/records.length).toFixed(1):'0'}题/天</div></div>`;
+    <div class="stat-card"><div class="label">英语</div><div class="value" style="color:#10b981">${le?le.english:'-'}</div><div class="sub">错题 ${le?le.wrong_english||0:'-'}</div></div>`;
 }
 
-function renderChart(records) {
-  const ctx = document.getElementById('mainChart').getContext('2d');
-  if (chart) chart.destroy();
-  const labels = records.map(r=>r.date);
-  const ds = [];
-  const cl = {chinese:'#ef4444',math:'#f59e0b',english:'#10b981',wc:'#ef4444',wm:'#f59e0b',we:'#10b981',comp:'#3b82f6'};
-  const isW = curTab==='wrong';
-  if (curTab==='all') {
-    const cd=records.map(r=>r.chinese),md=records.map(r=>r.math),ed=records.map(r=>r.english);
-    if (cd.some(v=>v!==null)) ds.push({label:'语文',data:cd,borderColor:cl.chinese,backgroundColor:cl.chinese+'20',tension:.3,spanGaps:true,pointRadius:3});
-    if (md.some(v=>v!==null)) ds.push({label:'数学',data:md,borderColor:cl.math,backgroundColor:cl.math+'20',tension:.3,spanGaps:true,pointRadius:3});
-    if (ed.some(v=>v!==null)) ds.push({label:'英语',data:ed,borderColor:cl.english,backgroundColor:cl.english+'20',tension:.3,spanGaps:true,pointRadius:3});
-  } else if (curTab==='chinese') {
-    ds.push({label:'语文',data:records.map(r=>r.chinese),borderColor:cl.chinese,backgroundColor:cl.chinese+'20',tension:.3,spanGaps:true,pointRadius:4,fill:true});
-  } else if (curTab==='math') {
-    ds.push({label:'数学',data:records.map(r=>r.math),borderColor:cl.math,backgroundColor:cl.math+'20',tension:.3,spanGaps:true,pointRadius:4,fill:true});
-  } else if (curTab==='english') {
-    ds.push({label:'英语',data:records.map(r=>r.english),borderColor:cl.english,backgroundColor:cl.english+'20',tension:.3,spanGaps:true,pointRadius:4,fill:true});
-  } else if (curTab==='wrong') {
-    const wcd=records.map(r=>r.wrong_chinese),wmd=records.map(r=>r.wrong_math),wed=records.map(r=>r.wrong_english);
-    if (wcd.some(v=>v!==null)) ds.push({label:'语文错题',data:wcd,borderColor:cl.wc,backgroundColor:cl.wc+'20',tension:.3,spanGaps:true,pointRadius:3});
-    if (wmd.some(v=>v!==null)) ds.push({label:'数学错题',data:wmd,borderColor:cl.wm,backgroundColor:cl.wm+'20',tension:.3,spanGaps:true,pointRadius:3});
-    if (wed.some(v=>v!==null)) ds.push({label:'英语错题',data:wed,borderColor:cl.we,backgroundColor:cl.we+'20',tension:.3,spanGaps:true,pointRadius:3});
-  } else if (curTab==='composite') {
-    ds.push({label:'综合评分',data:records.map(r=>calcComposite(r)),borderColor:cl.comp,backgroundColor:cl.comp+'10',tension:.3,spanGaps:true,pointRadius:4,fill:true,borderWidth:2});
-  }
-  chart = new Chart(ctx, {type:'line',data:{labels,datasets:ds},options:{
-    responsive:true,maintainAspectRatio:false,
-    interaction:{intersect:false,mode:'index'},
-    plugins:{legend:{position:'bottom',labels:{usePointStyle:true,padding:18}}},
-    scales:{y:{beginAtZero:isW,max:isW?undefined:(curTab==='composite'?100:150),ticks:{callback:v=>v+(isW?'题':'分')}}}
-  }});
-}
-
-function renderTable(records) {
-  const c = document.getElementById('recordTable');
-  if (!records.length) { c.innerHTML='<div style="text-align:center;padding:30px;color:#94a3b8">暂无记录</div>'; return; }
-  let h='<table><thead><tr><th>日期</th><th>语文</th><th>数学</th><th>英语</th><th>语文错题</th><th>数学错题</th><th>英语错题</th><th>综合评分</th><th>操作</th></tr></thead><tbody>';
+function renderTable(records){
+  const c=document.getElementById('recordTable');
+  if(!records.length){c.innerHTML='<div style="text-align:center;padding:30px;color:#94a3b8">暂无记录</div>';return;}
+  let h='<table><thead><tr><th>日期</th><th>语文</th><th>数学</th><th>英语</th><th>语文错题</th><th>数学错题</th><th>英语错题</th><th>综合</th><th>操作</th></tr></thead><tbody>';
   [...records].reverse().forEach(r=>{
     const comp=calcComposite(r);
     h+=`<tr><td>${r.date}</td><td>${r.chinese??'-'}</td><td>${r.math??'-'}</td><td>${r.english??'-'}</td><td>${r.wrong_chinese??'-'}</td><td>${r.wrong_math??'-'}</td><td>${r.wrong_english??'-'}</td><td style="font-weight:600;color:#3b82f6">${comp??'-'}</td><td><button class="del-btn" onclick="deleteRecord('${r.id}')">删除</button></td></tr>`;
   });
-  h+='</tbody></table>';
-  c.innerHTML=h;
+  h+='</tbody></table>';c.innerHTML=h;
 }
 
-function swTab(t,btn) {
+// ============ 初始化 & 登录 ============
+async function init(){
+  sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+  const{data:{session}}=await sb.auth.getSession();
+  if(session){user=session.user;await loadProfile();showApp();}
+}
+function switchTab(t){
+  document.getElementById('tabLogin').classList.toggle('active',t==='login');
+  document.getElementById('tabRegister').classList.toggle('active',t==='register');
+  document.getElementById('formLogin').style.display=t==='login'?'block':'none';
+  document.getElementById('formRegister').style.display=t==='register'?'block':'none';
+  document.getElementById('authTitle').textContent=t==='login'?'登录':'注册';
+  document.getElementById('authSub').textContent=t==='login'?'已有账号请登录':'创建家庭账号';
+  document.getElementById('loginError').textContent='';
+  document.getElementById('regError').textContent='';
+}
+async function doRegister(){
+  const family=document.getElementById('regFamily').value.trim();
+  const child=document.getElementById('regChild').value.trim();
+  const email=document.getElementById('regEmail').value.trim();
+  const password=document.getElementById('regPassword').value;
+  document.getElementById('regError').textContent='';
+  if(!family||!child||!email||!password){document.getElementById('regError').textContent='请填写所有字段';return;}
+  if(password.length<6){document.getElementById('regError').textContent='密码至少6位';return;}
+  try{
+    const{data,error}=await sb.auth.signUp({email,password,options:{data:{family_name:family,child_name:child}}});
+    if(error)throw error;
+    if(data.user?.identities?.length===0){document.getElementById('regError').textContent='该邮箱已注册，请直接登录';return;}
+    alert('注册成功！请登录');
+    switchTab('login');
+  }catch(e){document.getElementById('regError').textContent=e.message;}
+}
+async function doLogin(){
+  const email=document.getElementById('loginEmail').value.trim();
+  const password=document.getElementById('loginPassword').value;
+  document.getElementById('loginError').textContent='';
+  if(!email||!password){document.getElementById('loginError').textContent='请填写邮箱和密码';return;}
+  try{
+    const{data,error}=await sb.auth.signInWithPassword({email,password});
+    if(error)throw error;
+    user=data.user;await loadProfile();showApp();
+  }catch(e){document.getElementById('loginError').textContent=e.message;}
+}
+async function loadProfile(){
+  if(!user)return;
+  const meta=user.user_metadata||{};
+  profile={family_name:meta.family_name||'我的家庭',child_name:meta.child_name||'孩子'};
+  document.getElementById('familyName').textContent=profile.family_name;
+  document.getElementById('childName').textContent=profile.child_name;
+  document.getElementById('userAvatar').textContent=profile.family_name.charAt(0);
+}
+function showApp(){
+  document.getElementById('authContainer').style.display='none';
+  document.getElementById('mainApp').style.display='block';
+  document.getElementById('recDate').value=new Date().toISOString().slice(0,10);
+  // 加载目标
+  const goals=getGoals();
+  document.getElementById('goalDate').value=goals.date;
+  document.getElementById('goalChinese').value=goals.chinese??'';
+  document.getElementById('goalMath').value=goals.math??'';
+  document.getElementById('goalEnglish').value=goals.english??'';
+  loadRecords();
+}
+function saveGoals(){
+  const g={
+    date:document.getElementById('goalDate').value||'2026-06-25',
+    chinese:document.getElementById('goalChinese').value?parseFloat(document.getElementById('goalChinese').value):null,
+    math:document.getElementById('goalMath').value?parseFloat(document.getElementById('goalMath').value):null,
+    english:document.getElementById('goalEnglish').value?parseFloat(document.getElementById('goalEnglish').value):null
+  };
+  setGoals(g);loadRecords();
+}
+async function doLogout(){await sb.auth.signOut();user=null;profile=null;document.getElementById('authContainer').style.display='block';document.getElementById('mainApp').style.display='none';}
+
+// ============ 数据操作 ============
+async function loadRecords(){
+  if(!user)return[];
+  const{data,error}=await sb.from('study_records').select('*').eq('user_id',user.id).order('date');
+  if(error){console.error(error);return[];}
+  document.getElementById('recordCount').textContent=data.length+'条';
+  const goals=getGoals();
+  renderPredictPanel(data,goals);
+  renderStats(data);
+  renderChart(data,goals);
+  renderTable(data);
+  return data;
+}
+async function addRecord(){
+  if(!user)return;
+  const date=document.getElementById('recDate').value;
+  const ch=document.getElementById('recChinese').value;
+  const ma=document.getElementById('recMath').value;
+  const en=document.getElementById('recEnglish').value;
+  const wc=document.getElementById('recWC').value;
+  const wm=document.getElementById('recWM').value;
+  const we=document.getElementById('recWE').value;
+  if(!date){alert('请选择日期');return;}
+  if(!ch&&!ma&&!en&&!wc&&!wm&&!we){alert('至少填写一项');return;}
+  const record={
+    user_id:user.id,date,
+    chinese:ch?parseFloat(ch):null,math:ma?parseFloat(ma):null,english:en?parseFloat(en):null,
+    wrong_chinese:wc?parseInt(wc):null,wrong_math:wm?parseInt(wm):null,wrong_english:we?parseInt(we):null
+  };
+  try{
+    const{error}=await sb.from('study_records').upsert(record,{onConflict:'user_id, date'});
+    if(error)throw error;
+    ['recChinese','recMath','recEnglish','recWC','recWM','recWE'].forEach(id=>document.getElementById(id).value='');
+    loadRecords();
+  }catch(e){alert('保存失败: '+e.message);}
+}
+async function deleteRecord(id){
+  if(!confirm('确定删除？'))return;
+  const{error}=await sb.from('study_records').delete().eq('id',id).eq('user_id',user.id);
+  if(error){alert('删除失败');return;}
+  loadRecords();
+}
+function swTab(t,btn){
   curTab=t;
   document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
   loadRecords();
 }
-
-function renderAll(records) {
-  renderStats(records);
-  renderChart(records);
-  renderTable(records);
-}
-
-document.addEventListener('DOMContentLoaded', init);
+document.addEventListener('DOMContentLoaded',init);
 </script>
 </body>
 </html>
